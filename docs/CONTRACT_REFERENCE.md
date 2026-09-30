@@ -3178,6 +3178,19 @@ stellar contract invoke --id $PROGRESS_CONTRACT_ID -- version
 | 14 | `InvalidHistoryIndex` | Requested history index is out of bounds |
 | 15 | `PlayerLevelRecordEvicted` | Player level record was evicted from contract storage |
 
+### progress — Errors
+
+| Code | Variant | Description |
+|------|---------|-------------|
+| 1 | `AlreadyInitialized` | Contract already initialized |
+| 2 | `NotInitialized` | Contract not yet initialized |
+| 3 | `ContractPaused` | Contract is paused by admin |
+| 4 | `Unauthorized` | Caller is not the admin |
+| 5 | `InvalidProgressTransition` | Level transition is not allowed |
+| 6 | `AlreadyAtMaxLevel` | Player is already at EliteTier |
+| 7 | `PlayerNotFound` | Player ID does not exist |
+| 8 | `HistoryEntryNotFound` | History index out of range for the given player |
+
 ---
 
 ## scout_access
