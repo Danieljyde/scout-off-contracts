@@ -143,6 +143,12 @@ pub enum ScoutAccessError {
     /// The scout has been deactivated by the registration admin and cannot
     /// use paid services (subscribe, pay_to_contact, log_trial_offer).
     ScoutDeactivated = 39,
+
+    // ── Tier access enforcement (issue #1357) ──
+    /// `pay_to_contact` or `batch_contact_players` called by a Basic-tier scout,
+    /// or by a Pro-tier scout attempting to contact a Level-3 player.
+    /// Basic tier has no contact entitlement; Pro tier is capped at Level 2.
+    TierNotPermitted = 41,
 }
 
 impl AdminError for ScoutAccessError {
