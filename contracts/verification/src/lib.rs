@@ -3103,6 +3103,11 @@ impl VerificationContract {
         let _ = &milestone.validator;
 
         env.storage().persistent().set(&dispute_key, &dispute);
+        // Fix #1451: extend TTL on the dispute record at creation so it persists
+        // even if no vote is cast before the default TTL expires.
+        env.storage()
+            .persistent()
+            .extend_ttl(&dispute_key, PERSISTENT_TTL_MIN, PERSISTENT_TTL_MAX);
 
         let player_disputes_key = DataKey::PlayerDisputes(player_id);
         let mut player_disputes: Vec<u32> = env
@@ -3191,6 +3196,10 @@ impl VerificationContract {
         dispute.resolved = true;
         dispute.upheld = upheld;
         env.storage().persistent().set(&dispute_key, &dispute);
+        // Fix #1451: keep the resolved dispute record alive for auditability.
+        env.storage()
+            .persistent()
+            .extend_ttl(&dispute_key, PERSISTENT_TTL_MIN, PERSISTENT_TTL_MAX);
 
         let count: u32 = env
             .storage()
