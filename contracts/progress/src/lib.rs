@@ -386,6 +386,11 @@ impl ProgressContract {
         env.storage()
             .persistent()
             .set(&DataKey::PlayerLevel(player_id), &new_level);
+        env.storage().persistent().extend_ttl(
+            &DataKey::PlayerLevel(player_id),
+            PERSISTENT_TTL_MIN,
+            PERSISTENT_TTL_MAX,
+        );
 
         // Sync to registration contract if set
         if let Some(reg_contract) = env
@@ -409,6 +414,7 @@ impl ProgressContract {
             &caller,
             milestone_ref,
         );
+
         Ok(new_level)
     }
 
@@ -2795,5 +2801,49 @@ mod tests {
         let state = client.get_wiring_state();
         assert_eq!(state.registration_contract.address, Some(reg_addr2));
         assert_eq!(state.registration_contract.epoch, 2);
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #1439 — advance_level must extend PlayerLevel TTL after write
+    // -----------------------------------------------------------------------
+    #[test]
+    fn test_advance_level_extends_player_level_ttl() {
+        use soroban_sdk::testutils::storage::Persistent as _;
+        let (env, client, validator) = setup();
+        let contract_id = client.address.clone();
+
+        let player_id = 42u64;
+
+        client.advance_level(&validator, &player_id, &1u32);
+
+        // Verify the TTL of PlayerLevel(player_id) is at least PERSISTENT_TTL_MIN
+        env.as_contract(&contract_id, || {
+            let ttl = env
+                .storage()
+                .persistent()
+                .get_ttl(&DataKey::PlayerLevel(player_id));
+            assert!(
+                ttl >= PERSISTENT_TTL_MIN,
+                "PlayerLevel TTL {ttl} is below PERSISTENT_TTL_MIN {PERSISTENT_TTL_MIN}"
+            );
+        });
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #1437 — get_history_entry must return HistoryEntryNotFound for
+    // an out-of-range index, not PlayerNotFound
+    // -----------------------------------------------------------------------
+    #[test]
+    fn test_get_history_entry_returns_history_entry_not_found() {
+        let (_env, client, _validator) = setup();
+
+        let player_id = 99u64;
+        // Player has no history at all — any index should return HistoryEntryNotFound
+        let result = client.try_get_history_entry(&player_id, &1u32);
+        assert_eq!(
+            result,
+            Err(Ok(ProgressError::HistoryEntryNotFound)),
+            "expected HistoryEntryNotFound for missing history index"
+        );
     }
 }
