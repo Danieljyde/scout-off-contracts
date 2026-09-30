@@ -145,27 +145,8 @@ mod progress_contract {
 
 // Types mirroring the registration contract's `get_player` return value,
 // used by `dispute_milestone` for the wallet↔player_id authorization check
-// (issue #1014).
-#[contracttype]
-#[derive(Clone, Debug)]
-pub struct RegPlayerVitals {
-    pub age: u32,
-    pub position: String,
-    pub region: String,
-    pub nationality: String,
-}
-
-#[contracttype]
-#[derive(Clone, Debug)]
-pub struct RegPlayerProfile {
-    pub player_id: u64,
-    pub wallet: Address,
-    pub vitals: RegPlayerVitals,
-    pub ipfs_hashes: Vec<String>,
-    pub level: ProgressLevel,
-    pub registered_at: u64,
-    pub updated_at: u64,
-}
+// (issue #1014). Aliases of the shared-types definitions (issue #1455).
+pub use types::{RegPlayerProfile, RegPlayerVitals};
 
 #[contract]
 pub struct VerificationContract;

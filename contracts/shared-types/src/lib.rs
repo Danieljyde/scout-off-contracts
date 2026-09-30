@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contracttype, Address, Env, IntoVal, String};
+use soroban_sdk::{contracttype, Address, Env, IntoVal, String, Vec};
 
 /// Four-tier progress level for a player profile
 #[contracttype]
@@ -58,6 +58,80 @@ impl ProgressLevel {
             ProgressLevel::EliteTier => None,
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Cross-contract shared player types (issue #1455)
+// Single authoritative definitions used by registration and its consumers
+// (verification, scout_access) to avoid silent drift from mirror types.
+// ---------------------------------------------------------------------------
+
+/// Basic player vitals stored on-chain
+#[contracttype]
+#[derive(Clone, Debug, PartialEq)]
+pub struct PlayerVitals {
+    /// Player age in years at the time the profile was last written.
+    pub age: u32,
+    /// Player position label used for discovery filtering.
+    pub position: String,
+    /// Player region used for scout discovery filtering.
+    pub region: String,
+    /// Player nationality label displayed in profile results.
+    pub nationality: String,
+}
+
+/// Internal on-chain player profile (no level — progress contract is the source of truth)
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct StoredPlayerProfile {
+    /// Unique player identifier assigned by the registration contract.
+    pub player_id: u64,
+    /// Player wallet that owns and can update this profile.
+    pub wallet: Address,
+    /// Player vitals stored with the profile.
+    pub vitals: PlayerVitals,
+    /// IPFS/Arweave CIDs for highlight reels and photos
+    pub ipfs_hashes: Vec<String>,
+    /// Ledger timestamp when the player was first registered, in Unix seconds.
+    pub registered_at: u64,
+    /// Ledger timestamp when the profile was last updated, in Unix seconds.
+    pub updated_at: u64,
+}
+
+/// Full on-chain player profile returned to callers.
+/// `level` is derived from the progress contract at read time — it is NOT
+/// persisted here.  `progress::get_level` is the single source of truth.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct PlayerProfile {
+    /// Unique player identifier assigned by the registration contract.
+    pub player_id: u64,
+    /// Player wallet that owns and can update this profile.
+    pub wallet: Address,
+    /// Player vitals stored with the profile.
+    pub vitals: PlayerVitals,
+    /// IPFS/Arweave CIDs for highlight reels and photos
+    pub ipfs_hashes: Vec<String>,
+    /// Current player level loaded from the progress contract at read time.
+    pub level: ProgressLevel,
+    /// Ledger timestamp when the player was first registered, in Unix seconds.
+    pub registered_at: u64,
+    /// Ledger timestamp when the profile was last updated, in Unix seconds.
+    pub updated_at: u64,
+}
+
+/// Lightweight player view for scout discovery (no IPFS hashes or wallet).
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct PlayerSummary {
+    /// Unique player identifier for fetching the full profile.
+    pub player_id: u64,
+    /// Player vitals exposed for scout discovery.
+    pub vitals: PlayerVitals,
+    /// Current player level loaded from the progress contract at read time.
+    pub level: ProgressLevel,
+    /// Ledger timestamp when the profile was last updated, in Unix seconds.
+    pub updated_at: u64,
 }
 
 /// Adapter trait for contract-specific error enums used by the shared
